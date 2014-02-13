@@ -22,10 +22,15 @@ data LispVal = Atom String
              | String String
              | Bool Bool
 
+escapedChars :: Parser Char
+escapedChars = do char '\\'
+                  x <- oneOf "\\\""
+                  return x
+
+
 parseString :: Parser LispVal
 parseString = do char '"'
-                 x <- many (noneOf "\"")
-                 char '"'
+                 x <- many (escapedChars <|> noneOf "\"\\")
                  return $ String x
 
 parseAtom :: Parser LispVal
@@ -52,4 +57,3 @@ parseExpr = parseAtom
 main :: IO ()
 main = do args <- getArgs
           putStrLn (readExpr $ head args)
-
