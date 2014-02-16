@@ -22,6 +22,7 @@ data LispVal = Atom String
              | Number Integer
              | String String
              | Bool Bool
+             | Character Char
 
 escapedChars :: Parser Char
 escapedChars = do char '\\'
@@ -84,13 +85,23 @@ bin2dig' digint (x:xs) = let old = 2 * digint + (if x == '0' then 0 else 1) in
 parseExpr :: Parser LispVal
 parseExpr = parseAtom
         <|> parseString
-        <|> parseNumber
-        <|> parseBool
+        <|> try parseNumber
+        <|> try parseBool
+        <|> try parseCharacter
 
 parseBool :: Parser LispVal
 parseBool = do
     char '#'
     (char 't' >> return (Bool True)) <|> (char 'f' >> return (Bool False))
+
+parseCharacter :: Parser LispVal
+parseCharacter = do try $ string "#\\"
+                    value <- try (string "newline" <|> string "space")
+                            <|> do {x <- anyChar; notFollowedBy alphaNum ; return [x]}
+                    return $ Character $ case value of
+                      "space" -> ' '
+                      "newline" -> '\n'
+                      otherwise -> (value !! 0)
 
 main :: IO ()
 main = do args <- getArgs
